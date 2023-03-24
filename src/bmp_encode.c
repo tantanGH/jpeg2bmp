@@ -30,9 +30,12 @@ int32_t bmp_encode_write_header(BMP_ENCODE_HANDLE* bmp, uint32_t width, uint32_t
 
   if (bmp == NULL || bmp->fp == NULL) goto exit;
 
-  static uint8_t bmp_header[ 54 ];
+  bmp->width = width;
+  bmp->height = height;
 
-  memset(bmp_header, 0, 54);
+  static uint8_t bmp_header[ BMP_HEADER_BYTES ];
+
+  memset(bmp_header, 0, BMP_HEADER_BYTES);
 
   // eye catch
   bmp_header[0] = 0x42;
@@ -69,7 +72,7 @@ int32_t bmp_encode_write_header(BMP_ENCODE_HANDLE* bmp, uint32_t width, uint32_t
   // bit depth
   bmp_header[28] = 24;
 
-  rc = fwrite(bmp_header, 1, 54, bmp->fp) == 54 ? 0 : -1;
+  rc = fwrite(bmp_header, 1, BMP_HEADER_BYTES, bmp->fp) == BMP_HEADER_BYTES ? 0 : -1;
 
 exit:
   return rc;
@@ -78,7 +81,18 @@ exit:
 //
 //  encode
 //
-int32_t bmp_encode_write(BMP_ENCODE_HANDLE* bmp, uint8_t* bmp_buffer, size_t bmp_buffer_bytes) {
-  size_t len = fwrite(bmp_buffer, 1, bmp_buffer_bytes, bmp->fp);
-  return len >= bmp_buffer_bytes ? 0 : -1;
+int32_t bmp_encode_write(BMP_ENCODE_HANDLE* bmp, uint32_t pos_y, uint8_t* bmp_buffer, size_t bmp_buffer_line_bytes, size_t bmp_buffer_lines) {
+  
+  int32_t rc = 0;
+
+  fseek(bmp->fp, BMP_HEADER_BYTES + bmp->width * 3 * (bmp->height - (pos_y + bmp_buffer_lines)), SEEK_SET);
+  for (int16_t i = bmp_buffer_lines - 1; i >= 0; i--) {
+    size_t len = fwrite(bmp_buffer + bmp->width * 3 * i, 1, bmp_buffer_line_bytes, bmp->fp);
+    if (len != bmp_buffer_line_bytes) {
+      rc = -1;
+      break;
+    }
+  }
+
+  return rc;
 }

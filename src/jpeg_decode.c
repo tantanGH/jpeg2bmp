@@ -104,9 +104,18 @@ int32_t jpeg_decode_exec(JPEG_DECODE_HANDLE* jpeg, uint8_t* jpeg_buffer, size_t 
 
   int32_t mcu_y = 0;
   int32_t mcu_x = 0;
-  int32_t row_pitch = image_info.m_width * image_info.m_comps;
 
-  uint8_t* bmp_buffer = himem_malloc(image_info.m_width * image_info.m_MCUHeight * 3, 0);
+  // image_info.m_width ... total image width pixels
+  // image_info.m_comps ... bytes per pixel
+  int32_t row_pitch = image_info.m_width * image_info.m_comps;
+//  printf("m_width=%d, m_comps=%d, m_MCUWidth=%d, m_MCUHeight=%d, row_pitch=%d\n",
+//          image_info.m_width, image_info.m_comps, 
+//          image_info.m_MCUWidth, image_info.m_MCUHeight, 
+//          row_pitch);
+
+  /// image_info.m_MCUHeight ... block height pixels
+  uint8_t* bmp_buffer = himem_malloc(row_pitch * image_info.m_MCUHeight, 0);
+  size_t total_lines = 0;
 
   for (;;) {
 
@@ -121,13 +130,13 @@ int32_t jpeg_decode_exec(JPEG_DECODE_HANDLE* jpeg, uint8_t* jpeg_buffer, size_t 
       goto exit;
     }
 
-    //pDst_row = pImage + (mcu_y * image_info.m_MCUHeight) * row_pitch + (mcu_x * image_info.m_MCUWidth * image_info.m_comps);
     uint8_t* buf_row = bmp_buffer + (mcu_x * image_info.m_MCUWidth * image_info.m_comps);
-    size_t buf_bytes = mcu_x * image_info.m_MCUWidth * image_info.m_comps;
+    size_t buf_lines = 0;
 
     for (int32_t y = 0; y < image_info.m_MCUHeight; y += 8) {
 
       const int by_limit = min(8, image_info.m_height - (mcu_y * image_info.m_MCUHeight + y));
+      buf_lines += by_limit;
 
       for (int32_t x = 0; x < image_info.m_MCUWidth; x += 8) {
 
@@ -161,13 +170,14 @@ int32_t jpeg_decode_exec(JPEG_DECODE_HANDLE* jpeg, uint8_t* jpeg_buffer, size_t 
     }
 
     if (++mcu_x == image_info.m_MCUSPerRow) {
+      bmp_encode_write(jpeg->bmp, mcu_y * image_info.m_MCUHeight, bmp_buffer, row_pitch, buf_lines); 
+      total_lines += buf_lines;
       mcu_x = 0;
       mcu_y++;
     }
 
-    bmp_encode_write(jpeg->bmp, bmp_buffer, buf_bytes);
-
   }
+printf("total lines=%d\n",total_lines);
 end:
 
   himem_free(bmp_buffer, 0);

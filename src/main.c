@@ -61,6 +61,7 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
       if (argv[i][1] == 'o') {
         if (i+1 < argc && out_name[0] == '\0') {
           strcpy(out_name, argv[i+1]);
+          i++;
         } else {
           show_help_message();
           goto exit;
@@ -73,8 +74,12 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
         goto exit;
       }
     } else {
-      if (file_name != NULL || strlen(file_name) < 5) {
-        show_help_message();
+      if (file_name != NULL) {
+        printf("error: only 1 file can be specified.\n");
+        goto exit;
+      }
+      if (strlen(argv[i]) < 5) {
+        printf("error: not a jpeg file.\n");
         goto exit;
       }
       file_name = argv[i];
@@ -96,11 +101,29 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
       strcpy(out_ext, ".BMP");
     }
   }
-    
+
+  printf("source file: %s\n", file_name);
+  printf("output file: %s\n", out_name);
+  
+  // output file overwrite check
+  struct FILBUF filbuf;
+  if (FILES(&filbuf, out_name, 0x20) >= 0) {
+    printf("warning: output file (%s) already exists. overwrite? (y/n)", out_name);
+    uint8_t c;
+    do {
+      c = INKEY();
+      if (c == 'n' || c == 'N') {
+        printf("\ncanceled.\n");
+        goto exit;
+      }
+    } while (c != 'y' && c != 'Y');
+    printf("\n");
+  }
+
   // read JPEG data from file into memory buffer
   fp = fopen(file_name, "rb");
   if (fp == NULL) {
-    printf("error: failed to open file: %s\n", file_name);
+    printf("error: failed to open the source file (%s).\n", file_name);
     goto exit;
   }
 
@@ -123,11 +146,27 @@ int32_t main(int32_t argc, uint8_t* argv[]) {
   fclose(fp);
   fp = NULL;
 
+//  printf("source file read done.\n");
+
+  fo = fopen(out_name, "wb");
+  if (fo == NULL) {
+    printf("error: failed to open the output file (%s).\n", out_name);
+    goto exit;
+  }
+  fclose(fo);
+  fo = fopen(out_name, "rb+");
+
   BMP_ENCODE_HANDLE bmp_encode = { 0 };
+  bmp_encode_init(&bmp_encode, fo);
+
   JPEG_DECODE_HANDLE jpeg_decode = { 0 };
   jpeg_decode_init(&jpeg_decode);
   jpeg_decode_set_bmp_encoder(&jpeg_decode, &bmp_encode);
+
+  printf("converting...");
   rc = jpeg_decode_exec(&jpeg_decode, file_data, file_size);
+  printf("done.\n");
+
   jpeg_decode_close(&jpeg_decode);
   bmp_encode_close(&bmp_encode);
 
