@@ -115,7 +115,6 @@ int32_t jpeg_decode_exec(JPEG_DECODE_HANDLE* jpeg, uint8_t* jpeg_buffer, size_t 
 
   /// image_info.m_MCUHeight ... block height pixels
   uint8_t* bmp_buffer = himem_malloc(row_pitch * image_info.m_MCUHeight, 0);
-  size_t total_lines = 0;
 
   for (;;) {
 
@@ -171,14 +170,11 @@ int32_t jpeg_decode_exec(JPEG_DECODE_HANDLE* jpeg, uint8_t* jpeg_buffer, size_t 
 
     if (++mcu_x == image_info.m_MCUSPerRow) {
       bmp_encode_write(jpeg->bmp, mcu_y * image_info.m_MCUHeight, bmp_buffer, row_pitch, buf_lines); 
-      total_lines += buf_lines;
       mcu_x = 0;
       mcu_y++;
     }
 
   }
-printf("total lines=%d\n",total_lines);
-end:
 
   himem_free(bmp_buffer, 0);
 
