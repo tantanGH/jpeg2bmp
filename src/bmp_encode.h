@@ -10,6 +10,8 @@
 typedef struct {
   uint32_t width;
   uint32_t height;
+  size_t padding_bytes;
+  uint8_t padding[4];
   FILE* fp;
 } BMP_ENCODE_HANDLE;
 
