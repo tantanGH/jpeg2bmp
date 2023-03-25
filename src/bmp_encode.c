@@ -11,7 +11,12 @@
 int32_t bmp_encode_init(BMP_ENCODE_HANDLE* bmp, FILE* fp) {
 
   bmp->fp = fp;
+  bmp->width = 0;
+  bmp->height = 0;
+  bmp->padding_bytes = 0;
   
+  memset(bmp->padding, 0, 4);
+
   return 0;
 }
 
@@ -32,6 +37,8 @@ int32_t bmp_encode_write_header(BMP_ENCODE_HANDLE* bmp, uint32_t width, uint32_t
 
   bmp->width = width;
   bmp->height = height;
+
+  bmp->padding_bytes = (4 - ((width * 3) % 4)) % 4;
 
   static uint8_t bmp_header[ BMP_HEADER_BYTES ];
 
@@ -85,12 +92,15 @@ int32_t bmp_encode_write(BMP_ENCODE_HANDLE* bmp, uint32_t pos_y, uint8_t* bmp_bu
   
   int32_t rc = 0;
 
-  fseek(bmp->fp, BMP_HEADER_BYTES + bmp->width * 3 * (bmp->height - (pos_y + bmp_buffer_lines)), SEEK_SET);
+  fseek(bmp->fp, BMP_HEADER_BYTES + (bmp->width * 3 + bmp->padding_bytes) * (bmp->height - (pos_y + bmp_buffer_lines)), SEEK_SET);
   for (int16_t i = bmp_buffer_lines - 1; i >= 0; i--) {
     size_t len = fwrite(bmp_buffer + bmp->width * 3 * i, 1, bmp_buffer_line_bytes, bmp->fp);
     if (len != bmp_buffer_line_bytes) {
       rc = -1;
       break;
+    }
+    if (bmp->padding_bytes > 0) {
+      fwrite(bmp->padding, 1, bmp->padding_bytes, bmp->fp);
     }
   }
 

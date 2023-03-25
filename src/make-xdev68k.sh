@@ -7,7 +7,7 @@ fi
 
 TARGET_FILE="JPEG2BMP.X"
 DOC_FILE="../JPEG2BMP.DOC"
-ZIP_FILE="../../JPGBM010.ZIP"
+ZIP_FILE="../../JPGBM011.ZIP"
 
 CC=${XDEV68K_DIR}/m68k-toolchain/bin/m68k-elf-gcc
 GAS2HAS="${XDEV68K_DIR}/util/x68k_gas2has.pl -cpu 68000 -inc doscall.inc -inc iocscall.inc"

@@ -8,7 +8,7 @@
 #include "jpeg_decode.h"
 #include "bmp_encode.h"
 
-#define VERSION "0.1.0 (2023/03/24)"
+#define VERSION "0.1.1 (2023/03/25)"
 
 #define MAX_PATH_LEN (255)
 
